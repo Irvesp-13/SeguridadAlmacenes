@@ -10,6 +10,7 @@ import utez.edu.mx.unidad3.moduls.auth.dto.LoginRequestDTO;
 import utez.edu.mx.unidad3.moduls.user.User;
 import utez.edu.mx.unidad3.moduls.user.UserRepository;
 import utez.edu.mx.unidad3.security.jwt.JWTUtils;
+import utez.edu.mx.unidad3.security.jwt.UDService;
 import utez.edu.mx.unidad3.utils.APIResponse;
 
 @Service
@@ -21,7 +22,7 @@ public class AuthService {
     private JWTUtils jwtUtils;
 
     @Autowired
-    private UserDetailsService userDetailsService;
+    private UDService uDService;
 
     @Transactional(readOnly = true)
     public APIResponse doLogin(LoginRequestDTO payload) {
@@ -33,7 +34,7 @@ public class AuthService {
 
             if (found == null) return new APIResponse("Usuario no encontrado", true, HttpStatus.NOT_FOUND);
 
-            UserDetails userDetails = userDetailsService.loadUserByUsername(found.getUsername());
+            UserDetails userDetails = uDService.loadUserByUsername(found.getUsername());
             String token = jwtUtils.generateToken(userDetails);
             return new APIResponse(
                     "Opreacion exitosa",

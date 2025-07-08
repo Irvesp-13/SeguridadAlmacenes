@@ -19,7 +19,7 @@ public class UDService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User found = userRepository.fingByUsername(username).orElse(null);
+        User found = userRepository.findByUsername(username).orElse(null);
         if (found == null) throw new UsernameNotFoundException("El usuario no fue encontrado");
 
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + found.getRol().getName());

@@ -13,13 +13,14 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import utez.edu.mx.unidad3.security.jwt.JWTUtils;
+import utez.edu.mx.unidad3.security.jwt.UDService;
 
 import java.io.IOException;
 
 @Component
 public class JWTFilter extends OncePerRequestFilter {
     @Autowired
-    private UserDetailsService userDetailsService;
+    private UDService uDService;
 
     @Autowired
     private JWTUtils jwtUtils;
@@ -36,7 +37,7 @@ public class JWTFilter extends OncePerRequestFilter {
         }
 
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            UserDetails userDetails = uDService.loadUserByUsername(username);
 
             if (jwtUtils.validateToken(token, userDetails)) {
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
