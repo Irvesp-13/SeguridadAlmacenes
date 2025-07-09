@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import utez.edu.mx.unidad3.utils.APIResponse;
 @RestController
 @RequestMapping("/api/cede")
 @Tag(name = "controlador de cedes", description = "Operaciones relacionadas con cedes")
+@SecurityRequirement(name = "bearerAuth")
 public class CedeController {
     @Autowired
     private CedeService cedeService;
