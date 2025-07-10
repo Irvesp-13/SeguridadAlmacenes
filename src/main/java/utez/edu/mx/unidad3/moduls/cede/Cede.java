@@ -2,6 +2,9 @@ package utez.edu.mx.unidad3.moduls.cede;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import utez.edu.mx.unidad3.moduls.warehouse.Warehouse;
 
 import java.util.List;
@@ -22,9 +25,15 @@ public class Cede {
     @Column(name = "clave", nullable = false, unique = true)
     private String clave;
 
+    @Pattern(regexp = "^[A-Za-z]{1}[\\sA-Za-z]{5,}$", message = "Solo aceptamos letras")
+    @NotNull(message = "Favor de ingresar un valor")
+    @NotBlank(message = "No se aceptan valores en blanco")
     @Column(name = "estado", nullable = false)
     private String estado;
 
+    @Pattern(regexp = "^[A-Za-z]{1}[\\sA-Za-z]{5,}$", message = "Solo aceptamos letras")
+    @NotNull(message = "Favor de ingresar un valor")
+    @NotBlank(message = "No se aceptan valores en blanco")
     @Column(name = "municipio", nullable = false)
     private String municipio;
 
