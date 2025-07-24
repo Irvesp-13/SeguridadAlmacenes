@@ -1,7 +1,8 @@
 package utez.edu.mx.unidad3.moduls.auth.dto;
 
 public class LoginRequestDTO {
-    private String username, password;
+    private String username;
+    private String password;
 
     public LoginRequestDTO() {
     }
