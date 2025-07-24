@@ -2,6 +2,9 @@ package utez.edu.mx.unidad3.moduls.clients;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import utez.edu.mx.unidad3.moduls.warehouse.Warehouse;
 
 import java.util.ArrayList;
@@ -16,12 +19,21 @@ public class Client {
     private Long id;
 
     @Column(name = "name", nullable = false)
+    @Pattern(regexp = "^[A-Za-z]{1}[\\sA-Za-z]{5,}$", message = "Favor de colocar unicamente letras y espacios")
+    @NotNull(message = "Favor de ingresar un valor")
+    @NotBlank(message = "No se aceptan valores en blanco")
     private String name;
 
     @Column(name = "email", nullable = false, unique = true)
+    @Pattern(regexp = "^[a-z0-9][a-z0-9_.]{3,}@[a-z]{2,}(\\.[a-z]{2,}){1,2}$", message = "Favor de colocar un correo electrónico válido")
+    @NotNull(message = "Favor de ingresar un valor")
+    @NotBlank(message = "No se aceptan valores en blanco")
     private String email;
 
     @Column(name = "phone", nullable = false)
+    @Pattern(regexp = "^[0-9]{10}$", message = "Favor de colocar un número de teléfono válido")
+    @NotNull(message = "Favor de ingresar un valor")
+    @NotBlank(message = "No se aceptan valores en blanco")
     private String phone;
 
     @OneToMany(mappedBy = "client")
