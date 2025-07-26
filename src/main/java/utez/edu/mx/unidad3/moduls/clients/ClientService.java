@@ -58,11 +58,18 @@ public class ClientService {
     public APIResponse updateClient(Client payload) {
         try {
             Client found = clientRepository.findById(payload.getId()).orElse(null);
-            if (clientRepository.findByEmail((payload.getEmail())).isPresent()) {
-                return new APIResponse("El usuario no existe", true, HttpStatus.BAD_REQUEST);
+            if (found == null) {
+                return new APIResponse("El cliente no existe", true, HttpStatus.BAD_REQUEST);
             }
+
+            // Verificar si el email pertenece a otro cliente
+            Client emailOwner = clientRepository.findByEmail(payload.getEmail()).orElse(null);
+            if (emailOwner != null && !emailOwner.getId().equals(payload.getId())) {
+                return new APIResponse("El correo ya está en uso por otro cliente", true, HttpStatus.BAD_REQUEST);
+            }
+
             clientRepository.save(payload);
-            return new APIResponse ("Operacion exitosa", false, HttpStatus.OK);
+            return new APIResponse("Operacion exitosa", false, HttpStatus.OK);
         } catch (NullPointerException nullex) {
             nullex.printStackTrace();
             return new APIResponse("No se aceptan valores nulos", true, HttpStatus.BAD_REQUEST);

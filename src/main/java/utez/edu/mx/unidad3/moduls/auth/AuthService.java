@@ -6,6 +6,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import utez.edu.mx.unidad3.moduls.auth.dto.LoginRequestDTO;
+import utez.edu.mx.unidad3.moduls.user.Rol;
+import utez.edu.mx.unidad3.moduls.user.RolRepository;
 import utez.edu.mx.unidad3.moduls.user.User;
 import utez.edu.mx.unidad3.moduls.user.UserRepository;
 import utez.edu.mx.unidad3.security.jwt.JWTUtils;
@@ -19,6 +21,9 @@ import java.sql.SQLException;
 public class AuthService {
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RolRepository rolRepository;
 
     @Autowired
     private JWTUtils jwtUtils;
@@ -66,6 +71,19 @@ public class AuthService {
                         HttpStatus.BAD_REQUEST
                 );
 
+            // Buscar o crear el rol
+            Rol rol = null;
+            if (payload.getRol() != null && payload.getRol().getName() != null) {
+                rol = rolRepository.findByName(payload.getRol().getName()).orElse(null);
+                if (rol == null) {
+                    // Crear un nuevo rol si no existe
+                    rol = new Rol();
+                    rol.setName(payload.getRol().getName());
+                    rol = rolRepository.save(rol);
+                }
+            }
+
+            payload.setRol(rol);
             payload.setPassword(PasswordEncoder.encodePassword(payload.getPassword()));
             userRepository.save(payload);
 

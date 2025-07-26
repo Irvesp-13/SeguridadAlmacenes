@@ -41,12 +41,15 @@ public class MainSecurity {
     public SecurityFilterChain doFilterInternal(HttpSecurity http) throws Exception {
         http.csrf(c -> c.disable()).cors(c -> c.configurationSource(corsRegistry()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/cede/**").hasRole("EMPLOYEE")
-                        .requestMatchers("/api/client/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.POST,"/api/auth/**").permitAll()
+                        // Rutas públicas primero - más específicas
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers(
                                 SWAGGERS_URLS
                         ).permitAll()
+                        // Rutas protegidas después
+                        .requestMatchers("/api/cede/**").hasRole("EMPLOYEE")
+                        .requestMatchers("/api/client/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                     ).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
