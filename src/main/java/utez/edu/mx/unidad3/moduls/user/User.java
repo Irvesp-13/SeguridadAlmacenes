@@ -33,13 +33,14 @@ public class User {
     private String correo;
 
     @ManyToOne
+    @JoinColumn(name = "group_id")
     @JsonIgnore
     private Group group;
 
     public User() {
     }
 
-    public User(Long id, String username, String password, Rol rol, String nombreCompleto, String telefono, String correo, Group Group) {
+    public User(Long id, String username, String password, Rol rol, String nombreCompleto, String telefono, String correo, Group group) {
         this.id = id;
         this.username = username;
         this.password = password;

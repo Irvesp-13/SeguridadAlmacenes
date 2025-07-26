@@ -48,9 +48,9 @@ public class MainSecurity {
                                 SWAGGERS_URLS
                         ).permitAll()
                         // Rutas protegidas después
+                        .requestMatchers("/api/group/**").hasRole("ADMIN")
                         .requestMatchers("/api/cede/**").hasRole("ADMINGROUP")
                         .requestMatchers("/api/client/**").hasRole("ADMIN")
-                        .requestMatchers("/api/group/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                     ).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -68,29 +68,6 @@ public class MainSecurity {
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
-
-//    @Bean
-//    public UserDetailsService generateAdmin() {
-//        UserDetails admin = User.builder()
-//                .username("admin")
-//                .password(passwordEncoder().encode("admin"))
-//                .roles("ADMIN")
-//                .build();
-//
-//        UserDetails employee = User.builder()
-//                .username("chucky0013")
-//                .password(passwordEncoder().encode("123456"))
-//                .roles("EMPLOYEE")
-//                .build();
-//
-//        UserDetails swagger = User.builder()
-//                .username("swagger")
-//                .password(passwordEncoder().encode("987654"))
-//                .roles("SWAGGER")
-//                .build();
-//
-//        return new InMemoryUserDetailsManager(admin, employee, swagger);
-//    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
