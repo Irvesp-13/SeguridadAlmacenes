@@ -48,7 +48,7 @@ public class MainSecurity {
                                 SWAGGERS_URLS
                         ).permitAll()
                         // Rutas protegidas después
-                        .requestMatchers("/api/cede/**").hasRole("EMPLOYEE")
+                        .requestMatchers("/api/cede/**").hasRole("ADMINGROUP")
                         .requestMatchers("/api/client/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                     ).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));

@@ -73,14 +73,28 @@ public class AuthService {
 
             // Buscar o crear el rol
             Rol rol = null;
-            if (payload.getRol() != null && payload.getRol().getName() != null) {
-                rol = rolRepository.findByName(payload.getRol().getName()).orElse(null);
-                if (rol == null) {
-                    // Crear un nuevo rol si no existe
-                    rol = new Rol();
-                    rol.setName(payload.getRol().getName());
-                    rol = rolRepository.save(rol);
+            if (payload.getRol() != null) {
+                if (payload.getRol().getId() != null) {
+                    // Buscar el rol por ID si se proporciona
+                    rol = rolRepository.findById(payload.getRol().getId()).orElse(null);
+                } else if (payload.getRol().getName() != null) {
+                    // Buscar el rol por nombre si se proporciona
+                    rol = rolRepository.findByName(payload.getRol().getName()).orElse(null);
+                    if (rol == null) {
+                        // Crear un nuevo rol si no existe
+                        rol = new Rol();
+                        rol.setName(payload.getRol().getName());
+                        rol = rolRepository.save(rol);
+                    }
                 }
+            }
+
+            if (rol == null) {
+                return new APIResponse(
+                        "El rol especificado no existe",
+                        true,
+                        HttpStatus.BAD_REQUEST
+                );
             }
 
             payload.setRol(rol);
