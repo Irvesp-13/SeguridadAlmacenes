@@ -50,6 +50,7 @@ public class MainSecurity {
                         // Rutas protegidas después
                         .requestMatchers("/api/cede/**").hasRole("ADMINGROUP")
                         .requestMatchers("/api/client/**").hasRole("ADMIN")
+                        .requestMatchers("/api/group/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                     ).sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
