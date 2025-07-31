@@ -136,7 +136,7 @@ public class GroupController {
             }
     )
     })
-    public ResponseEntity<APIResponse> updateClient(@RequestBody Group payload) {
+    public ResponseEntity<APIResponse> updateClient(@RequestBody @Valid Group payload) {
         APIResponse response = groupService.updateGroup(payload);
         return new ResponseEntity<>(response, response.getStatus());
     }

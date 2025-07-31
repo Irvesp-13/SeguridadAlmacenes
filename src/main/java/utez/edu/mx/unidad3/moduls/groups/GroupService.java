@@ -86,7 +86,27 @@ public class GroupService {
                 return new APIResponse("El nombre ya está en uso por otro grupo", true, HttpStatus.BAD_REQUEST);
             }
 
-            groupRepository.save(payload);
+            // Actualizar solo los campos del grupo
+            found.setName(payload.getName());
+            found.setMunicipio(payload.getMunicipio());
+            found.setColonia(payload.getColonia());
+
+            // Si se envía una lista de usuarios, solo actualizar la relación (opcional)
+            if (payload.getUsers() != null && !payload.getUsers().isEmpty()) {
+                // Solo asociar usuarios existentes, sin sobrescribir datos críticos
+                List<User> attachedUsers = new ArrayList<>();
+                for (User user : payload.getUsers()) {
+                    if (user.getId() != null) {
+                        User attached = userRepository.findById(user.getId())
+                                .orElseThrow(() -> new RuntimeException("Usuario no encontrado con id: " + user.getId()));
+                        attached.setGroup(found); // Asegura la relación bidireccional
+                        attachedUsers.add(attached);
+                    }
+                }
+                found.setUsers(attachedUsers);
+            }
+
+            groupRepository.save(found);
             return new APIResponse("Operacion exitosa", false, HttpStatus.OK);
         } catch (NullPointerException nullex) {
             nullex.printStackTrace();

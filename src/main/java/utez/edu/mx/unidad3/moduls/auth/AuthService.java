@@ -16,6 +16,8 @@ import utez.edu.mx.unidad3.utils.APIResponse;
 import utez.edu.mx.unidad3.utils.PasswordEncoder;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 @Service
 public class AuthService {
@@ -30,6 +32,14 @@ public class AuthService {
 
     @Autowired
     private UDService uDService;
+
+    @Transactional(readOnly = true)
+    public APIResponse findAll() {
+        List<User> list = new ArrayList<>();
+        list = userRepository.findAll();
+
+        return new APIResponse("Operacion exitosa", list, false, HttpStatus.OK);
+    }
 
     @Transactional(readOnly = true)
     public APIResponse doLogin(LoginRequestDTO payload) {
