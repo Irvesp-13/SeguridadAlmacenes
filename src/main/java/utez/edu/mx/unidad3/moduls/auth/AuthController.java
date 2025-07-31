@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import utez.edu.mx.unidad3.moduls.auth.dto.LoginRequestDTO;
 import utez.edu.mx.unidad3.moduls.user.User;
 import utez.edu.mx.unidad3.utils.APIResponse;
+import org.springframework.web.bind.annotation.*;
 
 @RequestMapping("/api/auth")
 @RestController
@@ -80,6 +81,36 @@ public class AuthController {
     })
     public ResponseEntity<APIResponse> doRegister(@RequestBody User payload) {
         APIResponse response = authService.register(payload);
+        return new ResponseEntity<>(response, response.getStatus());
+    }
+
+    @GetMapping("")
+    @Operation(summary = "Usuarios existentes", description = "Se muestran los usuarios existentes en el sistema")
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    description = "Respuesta de operacion exitosa",
+                    content = {
+                            @Content(mediaType = "application/json", schema = @Schema(implementation = APIResponse.class))
+                    }
+            )
+            , @ApiResponse(
+            responseCode = "400",
+            description = "Error al mostrar los usuarios",
+            content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = APIResponse.class))
+            }
+    )
+            , @ApiResponse(
+            responseCode = "500",
+            description = "Error interno del servidor",
+            content = {
+                    @Content(mediaType = "application/json", schema = @Schema(implementation = APIResponse.class))
+            }
+    )
+    })
+    public ResponseEntity<APIResponse> findAll() {
+        APIResponse response = authService.findAll();
         return new ResponseEntity<>(response, response.getStatus());
     }
 }
