@@ -97,6 +97,31 @@ public class TypeService {
         }
     }
 
+    // Actualizar tipo por nombre
+    public APIResponse updateTypeByName(String name, TypeRequestDto typeRequestDto) {
+        try {
+            Optional<Type> typeOpt = typeRepository.findByName(name);
+            if (typeOpt.isEmpty()) {
+                return new APIResponse("Tipo de evento no encontrado con el nombre: " + name, true, HttpStatus.NOT_FOUND);
+            }
+
+            // Verificar que no exista otro tipo con el mismo nombre (excluyendo el actual)
+            Optional<Type> existingType = typeRepository.findByName(typeRequestDto.getName());
+            if (existingType.isPresent() && !existingType.get().getId().equals(typeOpt.get().getId())) {
+                return new APIResponse("Ya existe otro tipo de evento con el nombre: " + typeRequestDto.getName(), true, HttpStatus.CONFLICT);
+            }
+
+            Type type = typeOpt.get();
+            type.setName(typeRequestDto.getName());
+            type.setDescription(typeRequestDto.getDescription());
+
+            Type updatedType = typeRepository.save(type);
+            return new APIResponse("Tipo de evento actualizado exitosamente", updatedType, HttpStatus.OK);
+        } catch (Exception e) {
+            return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     // Eliminar tipo
     public APIResponse deleteType(Long id) {
         try {

@@ -59,6 +59,15 @@ public class TypeController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
+    // Actualizar tipo de evento por nombre
+    @PutMapping("/name/{name}")
+    @Operation(summary = "Actualizar tipo de evento por nombre", description = "Actualiza un tipo de evento existente por su nombre - solo administradores")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> updateTypeByName(@PathVariable String name, @Valid @RequestBody TypeRequestDto typeRequestDto) {
+        APIResponse response = typeService.updateTypeByName(name, typeRequestDto);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
     @DeleteMapping("/{id}")
     @Operation(summary = "Eliminar tipo de evento", description = "Elimina un tipo de evento - solo administradores")
     @SecurityRequirement(name = "bearerAuth")

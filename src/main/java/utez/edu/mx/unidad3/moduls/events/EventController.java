@@ -120,4 +120,19 @@ public class EventController {
         APIResponse response = eventService.getEventsByCreator(username);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Actualizar evento por ID", description = "Actualiza un evento existente por su ID - solo el creador o admin")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> updateEvent(
+            @PathVariable Long id,
+            @Valid @RequestBody EventRequestDto eventRequestDto) {
+
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+
+        APIResponse response = eventService.updateEvent(id, eventRequestDto, currentUsername);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 }
