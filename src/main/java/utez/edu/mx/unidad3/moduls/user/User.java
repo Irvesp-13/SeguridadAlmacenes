@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import utez.edu.mx.unidad3.moduls.clients.Client;
 import utez.edu.mx.unidad3.moduls.groups.Group;
+import utez.edu.mx.unidad3.moduls.events.Event;
+
+import java.util.Set;
 
 @Entity
 @Table(name = "user")
@@ -37,10 +40,24 @@ public class User {
     @JsonIgnore
     private Group group;
 
-    // User.java
     @OneToOne(mappedBy = "adminUser")
     @JsonIgnore
     private Group groupAdmin;
+
+    // Eventos creados por este usuario
+    @OneToMany(mappedBy = "creator", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore
+    private Set<Event> createdEvents;
+
+    // Relación Muchos a Muchos con Event (eventos a los que asistirá)
+    @ManyToMany
+    @JoinTable(
+        name = "user_event",
+        joinColumns = @JoinColumn(name = "user_id"),
+        inverseJoinColumns = @JoinColumn(name = "event_id")
+    )
+    @JsonIgnore
+    private Set<Event> events; // Eventos a los que asistirá este usuario
 
     public User() {
     }
@@ -127,5 +144,21 @@ public class User {
 
     public void setGroupAdmin(Group groupAdmin) {
         this.groupAdmin = groupAdmin;
+    }
+
+    public Set<Event> getCreatedEvents() {
+        return createdEvents;
+    }
+
+    public void setCreatedEvents(Set<Event> createdEvents) {
+        this.createdEvents = createdEvents;
+    }
+
+    public Set<Event> getEvents() {
+        return events;
+    }
+
+    public void setEvents(Set<Event> events) {
+        this.events = events;
     }
 }
