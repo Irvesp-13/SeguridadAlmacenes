@@ -37,10 +37,15 @@ public class User {
     @JsonIgnore
     private Group group;
 
+    // User.java
+    @OneToOne(mappedBy = "adminUser")
+    @JsonIgnore
+    private Group groupAdmin;
+
     public User() {
     }
 
-    public User(Long id, String username, String password, Rol rol, String nombreCompleto, String telefono, String correo, Group group) {
+    public User(Long id, String username, String password, Rol rol, String nombreCompleto, String telefono, String correo, Group group, Group groupAdmin) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -49,6 +54,7 @@ public class User {
         this.telefono = telefono;
         this.correo = correo;
         this.group = group;
+        this.groupAdmin = groupAdmin;
     }
 
     public Long getId() {
@@ -113,5 +119,13 @@ public class User {
 
     public void setGroup(Group group) {
         this.group = group;
+    }
+
+    public Group getGroupAdmin() {
+        return groupAdmin;
+    }
+
+    public void setGroupAdmin(Group groupAdmin) {
+        this.groupAdmin = groupAdmin;
     }
 }

@@ -43,16 +43,21 @@ public class Group {
     @JsonIgnore
     private List<Event> events;
 
+    @OneToOne
+    @JoinColumn(name = "admin_user_id", unique = true)
+    private User adminUser;
+
     public Group() {
     }
 
-    public Group(Long id, String name, String municipio, String colonia, List<User> users, List<Event> events) {
+    public Group(Long id, String name, String municipio, String colonia, List<User> users, List<Event> events, User adminUser) {
         this.id = id;
         this.name = name;
         this.municipio = municipio;
         this.colonia = colonia;
         this.users = users;
         this.events = events;
+        this.adminUser = adminUser;
     }
 
     public Long getId() {
@@ -101,5 +106,13 @@ public class Group {
 
     public void setEvents(List<Event> events) {
         this.events = events;
+    }
+
+    public User getAdminUser() {
+        return adminUser;
+    }
+
+    public void setAdminUser(User adminUser) {
+        this.adminUser = adminUser;
     }
 }

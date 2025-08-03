@@ -86,6 +86,13 @@ public class GroupService {
                 return new APIResponse("El nombre ya está en uso por otro grupo", true, HttpStatus.BAD_REQUEST);
             }
 
+            // Actualizar el administrador del grupo si se envía en el payload
+            if (payload.getAdminUser() != null && payload.getAdminUser().getId() != null) {
+                User admin = userRepository.findById(payload.getAdminUser().getId())
+                        .orElseThrow(() -> new RuntimeException("Administrador no encontrado con id: " + payload.getAdminUser().getId()));
+                found.setAdminUser(admin);
+            }
+
             // Actualizar solo los campos del grupo
             found.setName(payload.getName());
             found.setMunicipio(payload.getMunicipio());
