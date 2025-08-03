@@ -2,7 +2,6 @@ package utez.edu.mx.unidad3.moduls.user;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import utez.edu.mx.unidad3.moduls.clients.Client;
 import utez.edu.mx.unidad3.moduls.groups.Group;
 import utez.edu.mx.unidad3.moduls.events.Event;
 
