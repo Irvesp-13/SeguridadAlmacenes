@@ -21,19 +21,22 @@ public class EventRequestDto {
     @Size(min = 3, max = 50, message = "El tipo de evento debe tener entre 3 y 50 caracteres")
     private String eventType;
 
-    @NotNull(message = "El nombre del grupo es obligatorio")
-    @NotBlank(message = "El nombre del grupo no puede estar vacío")
-    private String groupName;
+    @Size(max = 500, message = "La descripción no puede exceder 500 caracteres")
+    private String description;
+
+    @Size(max = 255, message = "La ubicación no puede exceder 255 caracteres")
+    private String location;
 
     // Constructor vacío
     public EventRequestDto() {}
 
     // Constructor completo
-    public EventRequestDto(String title, LocalDateTime eventDate, String eventType, String groupName) {
+    public EventRequestDto(String title, LocalDateTime eventDate, String eventType, String description, String location) {
         this.title = title;
         this.eventDate = eventDate;
         this.eventType = eventType;
-        this.groupName = groupName;
+        this.description = description;
+        this.location = location;
     }
 
     // Getters y Setters
@@ -61,11 +64,19 @@ public class EventRequestDto {
         this.eventType = eventType;
     }
 
-    public String getGroupName() {
-        return groupName;
+    public String getDescription() {
+        return description;
     }
 
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 }

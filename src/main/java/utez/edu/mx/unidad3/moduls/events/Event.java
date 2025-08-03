@@ -5,16 +5,16 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import utez.edu.mx.unidad3.moduls.groups.Group;
+import utez.edu.mx.unidad3.moduls.user.User;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
-@Table(name = "events")
+@Table(name = "event")
 public class Event {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
     private Long id;
 
     @Column(name = "title", nullable = false, length = 100)
@@ -27,20 +27,23 @@ public class Event {
     @NotNull(message = "La fecha del evento es obligatoria")
     private LocalDateTime eventDate;
 
-    @Column(name = "event_type", nullable = false, length = 50)
-    @NotNull(message = "El tipo de evento es obligatorio")
-    @NotBlank(message = "El tipo de evento no puede estar vacío")
-    @Size(min = 3, max = 50, message = "El tipo de evento debe tener entre 3 y 50 caracteres")
-    private String eventType;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private EventStatus status = EventStatus.PROXIMAMENTE;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "group_id", nullable = false)
-    @JsonIgnore
-    private Group group;
+    // Relación Muchos a Uno con User (el creador del evento)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "creator_user_id", nullable = false)
+    private User creator;
+
+    // Relación Muchos a Uno con Type
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "type_id", nullable = false)
+    private Type type;
+
+    // Relación Muchos a Muchos con User (usuarios que asistirán al evento)
+    @ManyToMany(mappedBy = "events")
+    private Set<User> attendees; // Usuarios que asistirán a este evento
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -48,17 +51,23 @@ public class Event {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "description", length = 500)
+    private String description;
+
+    @Column(name = "location", length = 255)
+    private String location;
+
     // Constructor vacío
     public Event() {
         this.createdAt = LocalDateTime.now();
     }
 
     // Constructor completo
-    public Event(String title, LocalDateTime eventDate, String eventType, Group group) {
+    public Event(String title, LocalDateTime eventDate, User creator, Type type) {
         this.title = title;
         this.eventDate = eventDate;
-        this.eventType = eventType;
-        this.group = group;
+        this.creator = creator;
+        this.type = type;
         this.status = EventStatus.PROXIMAMENTE;
         this.createdAt = LocalDateTime.now();
     }
@@ -93,14 +102,6 @@ public class Event {
         this.eventDate = eventDate;
     }
 
-    public String getEventType() {
-        return eventType;
-    }
-
-    public void setEventType(String eventType) {
-        this.eventType = eventType;
-    }
-
     public EventStatus getStatus() {
         return status;
     }
@@ -109,12 +110,28 @@ public class Event {
         this.status = status;
     }
 
-    public Group getGroup() {
-        return group;
+    public User getCreator() {
+        return creator;
     }
 
-    public void setGroup(Group group) {
-        this.group = group;
+    public void setCreator(User creator) {
+        this.creator = creator;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public void setType(Type type) {
+        this.type = type;
+    }
+
+    public Set<User> getAttendees() {
+        return attendees;
+    }
+
+    public void setAttendees(Set<User> attendees) {
+        this.attendees = attendees;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -131,5 +148,21 @@ public class Event {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 }

@@ -7,8 +7,8 @@ import org.springframework.transaction.annotation.Transactional;
 import utez.edu.mx.unidad3.moduls.events.dto.EventRequestDto;
 import utez.edu.mx.unidad3.moduls.events.dto.EventResponseDto;
 import utez.edu.mx.unidad3.moduls.events.dto.EventStatusUpdateDto;
-import utez.edu.mx.unidad3.moduls.groups.Group;
-import utez.edu.mx.unidad3.moduls.groups.GroupRepository;
+import utez.edu.mx.unidad3.moduls.user.User;
+import utez.edu.mx.unidad3.moduls.user.UserRepository;
 import utez.edu.mx.unidad3.utils.APIResponse;
 
 import java.time.LocalDateTime;
@@ -24,15 +24,24 @@ public class EventService {
     private EventRepository eventRepository;
 
     @Autowired
-    private GroupRepository groupRepository;
+    private UserRepository userRepository;
+
+    @Autowired
+    private TypeRepository typeRepository;
 
     // Crear un nuevo evento
-    public APIResponse createEvent(EventRequestDto eventRequestDto) {
+    public APIResponse createEvent(EventRequestDto eventRequestDto, String creatorUsername) {
         try {
-            // Verificar que el grupo existe por nombre
-            Optional<Group> groupOpt = groupRepository.findByName(eventRequestDto.getGroupName());
-            if (groupOpt.isEmpty()) {
-                return new APIResponse("Grupo no encontrado con el nombre: " + eventRequestDto.getGroupName(), true, HttpStatus.NOT_FOUND);
+            // Verificar que el usuario creador existe
+            Optional<User> creatorOpt = userRepository.findByUsername(creatorUsername);
+            if (creatorOpt.isEmpty()) {
+                return new APIResponse("Usuario creador no encontrado: " + creatorUsername, true, HttpStatus.NOT_FOUND);
+            }
+
+            // Verificar que el tipo existe por nombre
+            Optional<Type> typeOpt = typeRepository.findByName(eventRequestDto.getEventType());
+            if (typeOpt.isEmpty()) {
+                return new APIResponse("Tipo de evento no encontrado con el nombre: " + eventRequestDto.getEventType(), true, HttpStatus.NOT_FOUND);
             }
 
             // Verificar que la fecha del evento sea futura
@@ -40,13 +49,23 @@ public class EventService {
                 return new APIResponse("La fecha del evento debe ser futura", true, HttpStatus.BAD_REQUEST);
             }
 
-            Group group = groupOpt.get();
+            User creator = creatorOpt.get();
+            Type type = typeOpt.get();
+
             Event event = new Event(
                 eventRequestDto.getTitle(),
                 eventRequestDto.getEventDate(),
-                eventRequestDto.getEventType(),
-                group
+                creator,
+                type
             );
+
+            // Agregar descripción y ubicación si están presentes
+            if (eventRequestDto.getDescription() != null) {
+                event.setDescription(eventRequestDto.getDescription());
+            }
+            if (eventRequestDto.getLocation() != null) {
+                event.setLocation(eventRequestDto.getLocation());
+            }
 
             Event savedEvent = eventRepository.save(event);
             EventResponseDto responseDto = convertToResponseDto(savedEvent);
@@ -71,40 +90,21 @@ public class EventService {
         }
     }
 
-    // Obtener eventos por grupo
-    public APIResponse getEventsByGroup(Long groupId) {
+    // Obtener eventos por creador
+    public APIResponse getEventsByCreator(String creatorUsername) {
         try {
-            // Verificar que el grupo existe
-            if (!groupRepository.existsById(groupId)) {
-                return new APIResponse("Grupo no encontrado", true, HttpStatus.NOT_FOUND);
+            // Verificar que el usuario existe
+            Optional<User> creatorOpt = userRepository.findByUsername(creatorUsername);
+            if (creatorOpt.isEmpty()) {
+                return new APIResponse("Usuario no encontrado: " + creatorUsername, true, HttpStatus.NOT_FOUND);
             }
 
-            List<Event> events = eventRepository.findByGroupIdOrderByEventDateDesc(groupId);
+            List<Event> events = eventRepository.findByCreatorUsername(creatorUsername);
             List<EventResponseDto> responseList = events.stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());
 
-            return new APIResponse("Eventos del grupo obtenidos exitosamente", responseList, HttpStatus.OK);
-        } catch (Exception e) {
-            return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // Obtener eventos por grupo usando nombre
-    public APIResponse getEventsByGroupName(String groupName) {
-        try {
-            // Verificar que el grupo existe
-            Optional<Group> groupOpt = groupRepository.findByName(groupName);
-            if (groupOpt.isEmpty()) {
-                return new APIResponse("Grupo no encontrado con el nombre: " + groupName, true, HttpStatus.NOT_FOUND);
-            }
-
-            List<Event> events = eventRepository.findByGroupName(groupName);
-            List<EventResponseDto> responseList = events.stream()
-                .map(this::convertToResponseDto)
-                .collect(Collectors.toList());
-
-            return new APIResponse("Eventos del grupo obtenidos exitosamente", responseList, HttpStatus.OK);
+            return new APIResponse("Eventos del usuario obtenidos exitosamente", responseList, HttpStatus.OK);
         } catch (Exception e) {
             return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -125,12 +125,12 @@ public class EventService {
         }
     }
 
-    // Obtener evento por título y nombre de grupo
-    public APIResponse getEventByTitleAndGroup(String title, String groupName) {
+    // Obtener evento por título y creador
+    public APIResponse getEventByTitleAndCreator(String title, String creatorUsername) {
         try {
-            Optional<Event> eventOpt = eventRepository.findByTitleAndGroupName(title, groupName);
+            Optional<Event> eventOpt = eventRepository.findByTitleAndCreatorUsername(title, creatorUsername);
             if (eventOpt.isEmpty()) {
-                return new APIResponse("Evento no encontrado con título '" + title + "' en el grupo '" + groupName + "'", true, HttpStatus.NOT_FOUND);
+                return new APIResponse("Evento no encontrado con título '" + title + "' del usuario '" + creatorUsername + "'", true, HttpStatus.NOT_FOUND);
             }
 
             EventResponseDto responseDto = convertToResponseDto(eventOpt.get());
@@ -140,15 +140,24 @@ public class EventService {
         }
     }
 
-    // Actualizar estado del evento (solo para administradores)
-    public APIResponse updateEventStatus(Long eventId, EventStatusUpdateDto statusUpdateDto) {
+    // Actualizar estado del evento (solo el creador o admin)
+    public APIResponse updateEventStatus(String title, String creatorUsername, EventStatusUpdateDto statusUpdateDto, String currentUsername) {
         try {
-            Optional<Event> eventOpt = eventRepository.findById(eventId);
+            Optional<Event> eventOpt = eventRepository.findByTitleAndCreatorUsername(title, creatorUsername);
             if (eventOpt.isEmpty()) {
-                return new APIResponse("Evento no encontrado", true, HttpStatus.NOT_FOUND);
+                return new APIResponse("Evento no encontrado con título '" + title + "' del usuario '" + creatorUsername + "'", true, HttpStatus.NOT_FOUND);
             }
 
             Event event = eventOpt.get();
+
+            // Verificar que el usuario actual es el creador del evento o es admin
+            if (!event.getCreator().getUsername().equals(currentUsername)) {
+                Optional<User> currentUserOpt = userRepository.findByUsername(currentUsername);
+                if (currentUserOpt.isEmpty() || !isAdminUser(currentUserOpt.get())) {
+                    return new APIResponse("No tienes permisos para actualizar este evento", true, HttpStatus.FORBIDDEN);
+                }
+            }
+
             event.setStatus(statusUpdateDto.getStatus());
             Event updatedEvent = eventRepository.save(event);
 
@@ -159,29 +168,10 @@ public class EventService {
         }
     }
 
-    // Actualizar estado del evento usando título y nombre de grupo
-    public APIResponse updateEventStatusByName(String title, String groupName, EventStatusUpdateDto statusUpdateDto) {
-        try {
-            Optional<Event> eventOpt = eventRepository.findByTitleAndGroupName(title, groupName);
-            if (eventOpt.isEmpty()) {
-                return new APIResponse("Evento no encontrado con título '" + title + "' en el grupo '" + groupName + "'", true, HttpStatus.NOT_FOUND);
-            }
-
-            Event event = eventOpt.get();
-            event.setStatus(statusUpdateDto.getStatus());
-            Event updatedEvent = eventRepository.save(event);
-
-            EventResponseDto responseDto = convertToResponseDto(updatedEvent);
-            return new APIResponse("Estado del evento actualizado exitosamente", responseDto, HttpStatus.OK);
-        } catch (Exception e) {
-            return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // Obtener eventos próximos
+    // Obtener eventos próximos públicos
     public APIResponse getUpcomingEvents() {
         try {
-            List<Event> events = eventRepository.findUpcomingEvents(LocalDateTime.now());
+            List<Event> events = eventRepository.findPublicUpcomingEvents(LocalDateTime.now());
             List<EventResponseDto> responseList = events.stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());
@@ -206,53 +196,48 @@ public class EventService {
         }
     }
 
-    // Eliminar evento
-    public APIResponse deleteEvent(Long eventId) {
+    // Eliminar evento (solo el creador o admin)
+    public APIResponse deleteEvent(String title, String creatorUsername, String currentUsername) {
         try {
-            if (!eventRepository.existsById(eventId)) {
-                return new APIResponse("Evento no encontrado", true, HttpStatus.NOT_FOUND);
-            }
-
-            eventRepository.deleteById(eventId);
-            return new APIResponse("Evento eliminado exitosamente", true, HttpStatus.OK);
-        } catch (Exception e) {
-            return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
-
-    // Eliminar evento usando título y nombre de grupo
-    public APIResponse deleteEventByName(String title, String groupName) {
-        try {
-            Optional<Event> eventOpt = eventRepository.findByTitleAndGroupName(title, groupName);
+            Optional<Event> eventOpt = eventRepository.findByTitleAndCreatorUsername(title, creatorUsername);
             if (eventOpt.isEmpty()) {
-                return new APIResponse("Evento no encontrado con título '" + title + "' en el grupo '" + groupName + "'", true, HttpStatus.NOT_FOUND);
+                return new APIResponse("Evento no encontrado con título '" + title + "' del usuario '" + creatorUsername + "'", true, HttpStatus.NOT_FOUND);
             }
 
-            eventRepository.delete(eventOpt.get());
+            Event event = eventOpt.get();
+
+            // Verificar que el usuario actual es el creador del evento o es admin
+            if (!event.getCreator().getUsername().equals(currentUsername)) {
+                Optional<User> currentUserOpt = userRepository.findByUsername(currentUsername);
+                if (currentUserOpt.isEmpty() || !isAdminUser(currentUserOpt.get())) {
+                    return new APIResponse("No tienes permisos para eliminar este evento", true, HttpStatus.FORBIDDEN);
+                }
+            }
+
+            eventRepository.delete(event);
             return new APIResponse("Evento eliminado exitosamente", true, HttpStatus.OK);
         } catch (Exception e) {
             return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    // Obtener eventos por estado y nombre de grupo
-    public APIResponse getEventsByGroupNameAndStatus(String groupName, EventStatus status) {
+    // Buscar eventos por tipo
+    public APIResponse getEventsByType(String typeName) {
         try {
-            // Verificar que el grupo existe
-            Optional<Group> groupOpt = groupRepository.findByName(groupName);
-            if (groupOpt.isEmpty()) {
-                return new APIResponse("Grupo no encontrado con el nombre: " + groupName, true, HttpStatus.NOT_FOUND);
-            }
-
-            List<Event> events = eventRepository.findByGroupNameAndStatus(groupName, status);
+            List<Event> events = eventRepository.findByTypeName(typeName);
             List<EventResponseDto> responseList = events.stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());
 
-            return new APIResponse("Eventos filtrados obtenidos exitosamente", responseList, HttpStatus.OK);
+            return new APIResponse("Eventos filtrados por tipo obtenidos exitosamente", responseList, HttpStatus.OK);
         } catch (Exception e) {
             return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    // Método auxiliar para verificar si un usuario es admin
+    private boolean isAdminUser(User user) {
+        return "ADMIN".equals(user.getRol().getName()) || "ADMINGROUP".equals(user.getRol().getName());
     }
 
     // Método auxiliar para convertir Event a EventResponseDto
@@ -261,10 +246,13 @@ public class EventService {
             event.getId(),
             event.getTitle(),
             event.getEventDate(),
-            event.getEventType(),
+            event.getType().getName(),
             event.getStatus(),
-            event.getGroup().getId(),
-            event.getGroup().getName(),
+            event.getCreator().getId(),
+            event.getCreator().getUsername(),
+            event.getCreator().getNombreCompleto(),
+            event.getDescription(),
+            event.getLocation(),
             event.getCreatedAt(),
             event.getUpdatedAt()
         );

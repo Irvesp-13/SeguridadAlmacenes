@@ -6,6 +6,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import utez.edu.mx.unidad3.moduls.events.dto.EventRequestDto;
 import utez.edu.mx.unidad3.moduls.events.dto.EventStatusUpdateDto;
@@ -13,17 +15,22 @@ import utez.edu.mx.unidad3.utils.APIResponse;
 
 @RestController
 @RequestMapping("/api/events")
-@CrossOrigin(origins = {"*"})
-@Tag(name = "Eventos", description = "Gestión de eventos de grupos")
+@Tag(name = "Eventos", description = "API para gestionar eventos")
+@CrossOrigin(origins = "*")
 public class EventController {
 
     @Autowired
     private EventService eventService;
 
     @PostMapping
-    @Operation(summary = "Crear un nuevo evento", description = "Crea un nuevo evento para un grupo específico")
+    @Operation(summary = "Crear un nuevo evento", description = "Crea un nuevo evento - requiere autenticación")
+    @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<APIResponse> createEvent(@Valid @RequestBody EventRequestDto eventRequestDto) {
-        APIResponse response = eventService.createEvent(eventRequestDto);
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String creatorUsername = authentication.getName();
+
+        APIResponse response = eventService.createEvent(eventRequestDto, creatorUsername);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
@@ -33,7 +40,6 @@ public class EventController {
         APIResponse response = eventService.getAllEvents();
         return ResponseEntity.status(response.getStatus()).body(response);
     }
-
 
     @GetMapping("/upcoming")
     @Operation(summary = "Obtener eventos próximos", description = "Obtiene todos los eventos con fecha futura")
@@ -49,41 +55,69 @@ public class EventController {
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
+    @GetMapping("/creator/{creatorUsername}")
+    @Operation(summary = "Obtener eventos por creador", description = "Obtiene todos los eventos creados por un usuario específico")
+    public ResponseEntity<APIResponse> getEventsByCreator(@PathVariable String creatorUsername) {
+        APIResponse response = eventService.getEventsByCreator(creatorUsername);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
     @GetMapping("/find")
-    @Operation(summary = "Obtener evento por título y grupo", description = "Obtiene un evento específico por título y nombre de grupo")
-    public ResponseEntity<APIResponse> getEventByTitleAndGroup(
+    @Operation(summary = "Obtener evento por título y creador", description = "Obtiene un evento específico por título y nombre de usuario creador")
+    public ResponseEntity<APIResponse> getEventByTitleAndCreator(
             @RequestParam String title,
-            @RequestParam String groupName) {
-        APIResponse response = eventService.getEventByTitleAndGroup(title, groupName);
+            @RequestParam String creatorUsername) {
+        APIResponse response = eventService.getEventByTitleAndCreator(title, creatorUsername);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @GetMapping("/type/{typeName}")
+    @Operation(summary = "Obtener eventos por tipo", description = "Obtiene eventos filtrados por tipo")
+    public ResponseEntity<APIResponse> getEventsByType(@PathVariable String typeName) {
+        APIResponse response = eventService.getEventsByType(typeName);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @PutMapping("/update-status")
-    @Operation(summary = "Actualizar estado del evento por nombre", description = "Actualiza el estado de un evento usando título y nombre de grupo")
+    @Operation(summary = "Actualizar estado del evento", description = "Actualiza el estado de un evento usando título y creador - solo el creador o admin")
     @SecurityRequirement(name = "bearerAuth")
-    public ResponseEntity<APIResponse> updateEventStatusByName(
+    public ResponseEntity<APIResponse> updateEventStatus(
             @RequestParam String title,
-            @RequestParam String groupName,
+            @RequestParam String creatorUsername,
             @Valid @RequestBody EventStatusUpdateDto statusUpdateDto) {
-        APIResponse response = eventService.updateEventStatusByName(title, groupName, statusUpdateDto);
+
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+
+        APIResponse response = eventService.updateEventStatus(title, creatorUsername, statusUpdateDto, currentUsername);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
     @DeleteMapping("/delete")
-    @Operation(summary = "Eliminar evento por nombre", description = "Elimina un evento usando título y nombre de grupo")
-    public ResponseEntity<APIResponse> deleteEventByName(
+    @Operation(summary = "Eliminar evento", description = "Elimina un evento usando título y creador - solo el creador o admin")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> deleteEvent(
             @RequestParam String title,
-            @RequestParam String groupName) {
-        APIResponse response = eventService.deleteEventByName(title, groupName);
+            @RequestParam String creatorUsername) {
+
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = authentication.getName();
+
+        APIResponse response = eventService.deleteEvent(title, creatorUsername, currentUsername);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 
-    @GetMapping("/group/{groupName}/status/{status}")
-    @Operation(summary = "Obtener eventos por grupo y estado", description = "Obtiene eventos filtrados por nombre de grupo y estado")
-    public ResponseEntity<APIResponse> getEventsByGroupNameAndStatus(
-            @PathVariable String groupName,
-            @PathVariable EventStatus status) {
-        APIResponse response = eventService.getEventsByGroupNameAndStatus(groupName, status);
+    @GetMapping("/my-events")
+    @Operation(summary = "Obtener mis eventos", description = "Obtiene todos los eventos creados por el usuario autenticado")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> getMyEvents() {
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        APIResponse response = eventService.getEventsByCreator(username);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
 }

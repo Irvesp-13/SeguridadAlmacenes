@@ -12,8 +12,16 @@ public class EventResponseDto {
     private String eventType;
     private EventStatus status;
     private String statusDisplayName;
-    private Long groupId;
-    private String groupName;
+
+    // Información del creador
+    private Long creatorId;
+    private String creatorUsername;
+    private String creatorFullName;
+
+    // Nuevos campos
+    private String description;
+    private String location;
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -22,7 +30,8 @@ public class EventResponseDto {
 
     // Constructor completo
     public EventResponseDto(Long id, String title, LocalDateTime eventDate, String eventType,
-                           EventStatus status, Long groupId, String groupName,
+                           EventStatus status, Long creatorId, String creatorUsername,
+                           String creatorFullName, String description, String location,
                            LocalDateTime createdAt, LocalDateTime updatedAt) {
         this.id = id;
         this.title = title;
@@ -30,8 +39,11 @@ public class EventResponseDto {
         this.eventType = eventType;
         this.status = status;
         this.statusDisplayName = status.getDisplayName();
-        this.groupId = groupId;
-        this.groupName = groupName;
+        this.creatorId = creatorId;
+        this.creatorUsername = creatorUsername;
+        this.creatorFullName = creatorFullName;
+        this.description = description;
+        this.location = location;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -75,7 +87,7 @@ public class EventResponseDto {
 
     public void setStatus(EventStatus status) {
         this.status = status;
-        this.statusDisplayName = status.getDisplayName();
+        this.statusDisplayName = status != null ? status.getDisplayName() : null;
     }
 
     public String getStatusDisplayName() {
@@ -86,20 +98,44 @@ public class EventResponseDto {
         this.statusDisplayName = statusDisplayName;
     }
 
-    public Long getGroupId() {
-        return groupId;
+    public Long getCreatorId() {
+        return creatorId;
     }
 
-    public void setGroupId(Long groupId) {
-        this.groupId = groupId;
+    public void setCreatorId(Long creatorId) {
+        this.creatorId = creatorId;
     }
 
-    public String getGroupName() {
-        return groupName;
+    public String getCreatorUsername() {
+        return creatorUsername;
     }
 
-    public void setGroupName(String groupName) {
-        this.groupName = groupName;
+    public void setCreatorUsername(String creatorUsername) {
+        this.creatorUsername = creatorUsername;
+    }
+
+    public String getCreatorFullName() {
+        return creatorFullName;
+    }
+
+    public void setCreatorFullName(String creatorFullName) {
+        this.creatorFullName = creatorFullName;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
     }
 
     public LocalDateTime getCreatedAt() {

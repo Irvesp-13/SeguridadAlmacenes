@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
-import utez.edu.mx.unidad3.moduls.events.Event;
 import utez.edu.mx.unidad3.moduls.user.User;
 
 import java.util.List;
@@ -39,10 +38,6 @@ public class Group {
     @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private List<User> users;
 
-    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JsonIgnore
-    private List<Event> events;
-
     @OneToOne
     @JoinColumn(name = "admin_user_id", unique = true)
     private User adminUser;
@@ -50,13 +45,12 @@ public class Group {
     public Group() {
     }
 
-    public Group(Long id, String name, String municipio, String colonia, List<User> users, List<Event> events, User adminUser) {
+    public Group(Long id, String name, String municipio, String colonia, List<User> users, User adminUser) {
         this.id = id;
         this.name = name;
         this.municipio = municipio;
         this.colonia = colonia;
         this.users = users;
-        this.events = events;
         this.adminUser = adminUser;
     }
 
@@ -98,14 +92,6 @@ public class Group {
 
     public void setUsers(List<User> users) {
         this.users = users;
-    }
-
-    public List<Event> getEvents() {
-        return events;
-    }
-
-    public void setEvents(List<Event> events) {
-        this.events = events;
     }
 
     public User getAdminUser() {
