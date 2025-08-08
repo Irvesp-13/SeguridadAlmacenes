@@ -171,7 +171,7 @@ public class EventService {
     // Obtener eventos próximos públicos
     public APIResponse getUpcomingEvents() {
         try {
-            List<Event> events = eventRepository.findPublicUpcomingEvents(LocalDateTime.now());
+            List<Event> events = eventRepository.findUpcomingEvents(LocalDateTime.now());
             List<EventResponseDto> responseList = events.stream()
                 .map(this::convertToResponseDto)
                 .collect(Collectors.toList());
@@ -278,6 +278,179 @@ public class EventService {
 
             return new APIResponse("Evento actualizado exitosamente", responseDto, HttpStatus.OK);
 
+        } catch (Exception e) {
+            return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    // Registrar asistencia de un usuario a un evento
+    public APIResponse registerAttendance(Long eventId, String username) {
+        try {
+            // Verificar que el evento existe
+            Optional<Event> eventOpt = eventRepository.findById(eventId);
+            if (eventOpt.isEmpty()) {
+                return new APIResponse("Evento no encontrado", true, HttpStatus.NOT_FOUND);
+            }
+
+            // Verificar que el usuario existe
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                return new APIResponse("Usuario no encontrado: " + username, true, HttpStatus.NOT_FOUND);
+            }
+
+            Event event = eventOpt.get();
+            User user = userOpt.get();
+
+            // Verificar que el evento no ha pasado
+            if (event.getEventDate().isBefore(LocalDateTime.now())) {
+                return new APIResponse("No puedes registrarte a un evento que ya pasó", true, HttpStatus.BAD_REQUEST);
+            }
+
+            // Verificar que el evento está disponible para registro
+            if (event.getStatus() == EventStatus.FINALIZADO) {
+                return new APIResponse("No puedes registrarte a un evento finalizado", true, HttpStatus.BAD_REQUEST);
+            }
+
+            // Verificar si el usuario ya está registrado
+            if (eventRepository.isUserRegisteredForEvent(eventId, username)) {
+                return new APIResponse("Ya estás registrado para asistir a este evento", true, HttpStatus.CONFLICT);
+            }
+
+            // Agregar el usuario a la lista de asistentes
+            if (event.getAttendees() == null) {
+                event.setAttendees(new java.util.HashSet<>());
+            }
+            event.getAttendees().add(user);
+
+            // Guardar el evento actualizado
+            eventRepository.save(event);
+
+            return new APIResponse("Te has registrado exitosamente para el evento: " + event.getTitle(), null, HttpStatus.OK);
+
+        } catch (Exception e) {
+            return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Cancelar asistencia de un usuario a un evento
+    public APIResponse cancelAttendance(Long eventId, String username) {
+        try {
+            // Verificar que el evento existe
+            Optional<Event> eventOpt = eventRepository.findById(eventId);
+            if (eventOpt.isEmpty()) {
+                return new APIResponse("Evento no encontrado", true, HttpStatus.NOT_FOUND);
+            }
+
+            // Verificar que el usuario existe
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                return new APIResponse("Usuario no encontrado: " + username, true, HttpStatus.NOT_FOUND);
+            }
+
+            Event event = eventOpt.get();
+            User user = userOpt.get();
+
+            // Verificar que el evento no ha pasado
+            if (event.getEventDate().isBefore(LocalDateTime.now())) {
+                return new APIResponse("No puedes cancelar la asistencia a un evento que ya pasó", true, HttpStatus.BAD_REQUEST);
+            }
+
+            // Verificar si el usuario está registrado
+            if (!eventRepository.isUserRegisteredForEvent(eventId, username)) {
+                return new APIResponse("No estás registrado para este evento", true, HttpStatus.NOT_FOUND);
+            }
+
+            // Remover el usuario de la lista de asistentes
+            event.getAttendees().remove(user);
+
+            // Guardar el evento actualizado
+            eventRepository.save(event);
+
+            return new APIResponse("Has cancelado tu asistencia al evento: " + event.getTitle(), null, HttpStatus.OK);
+
+        } catch (Exception e) {
+            return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Obtener eventos a los que asiste un usuario
+    public APIResponse getEventsByAttendee(String username) {
+        try {
+            // Verificar que el usuario existe
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                return new APIResponse("Usuario no encontrado: " + username, true, HttpStatus.NOT_FOUND);
+            }
+
+            List<Event> events = eventRepository.findEventsByAttendeeUsername(username);
+            List<EventResponseDto> responseList = events.stream()
+                .map(this::convertToResponseDto)
+                .collect(Collectors.toList());
+
+            return new APIResponse("Eventos a los que asistes obtenidos exitosamente", responseList, HttpStatus.OK);
+        } catch (Exception e) {
+            return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Obtener asistentes de un evento
+    public APIResponse getEventAttendees(Long eventId) {
+        try {
+            Optional<Event> eventOpt = eventRepository.findById(eventId);
+            if (eventOpt.isEmpty()) {
+                return new APIResponse("Evento no encontrado", true, HttpStatus.NOT_FOUND);
+            }
+
+            Event event = eventOpt.get();
+            List<User> attendees = event.getAttendees() != null ?
+                event.getAttendees().stream().collect(Collectors.toList()) :
+                new java.util.ArrayList<>();
+
+            // Crear una respuesta simplificada con información básica de los asistentes
+            List<java.util.Map<String, Object>> attendeesInfo = attendees.stream()
+                .map(user -> {
+                    java.util.Map<String, Object> userInfo = new java.util.HashMap<>();
+                    userInfo.put("id", user.getId());
+                    userInfo.put("username", user.getUsername());
+                    userInfo.put("nombreCompleto", user.getNombreCompleto());
+                    userInfo.put("correo", user.getCorreo());
+                    return userInfo;
+                })
+                .collect(Collectors.toList());
+
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("evento", event.getTitle());
+            response.put("totalAsistentes", attendeesInfo.size());
+            response.put("asistentes", attendeesInfo);
+
+            return new APIResponse("Asistentes del evento obtenidos exitosamente", response, HttpStatus.OK);
+        } catch (Exception e) {
+            return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    // Verificar si un usuario está registrado para un evento
+    public APIResponse checkUserRegistration(Long eventId, String username) {
+        try {
+            // Verificar que el evento existe
+            Optional<Event> eventOpt = eventRepository.findById(eventId);
+            if (eventOpt.isEmpty()) {
+                return new APIResponse("Evento no encontrado", true, HttpStatus.NOT_FOUND);
+            }
+
+            // Verificar que el usuario existe
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                return new APIResponse("Usuario no encontrado: " + username, true, HttpStatus.NOT_FOUND);
+            }
+
+            boolean isRegistered = eventRepository.isUserRegisteredForEvent(eventId, username);
+
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("estaRegistrado", isRegistered);
+            response.put("evento", eventOpt.get().getTitle());
+            response.put("usuario", username);
+
+            return new APIResponse("Estado de registro verificado", response, HttpStatus.OK);
         } catch (Exception e) {
             return new APIResponse("Error interno del servidor: " + e.getMessage(), true, HttpStatus.INTERNAL_SERVER_ERROR);
         }

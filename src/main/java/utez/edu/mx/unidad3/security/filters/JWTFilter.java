@@ -6,6 +6,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -15,6 +17,9 @@ import utez.edu.mx.unidad3.security.jwt.JWTUtils;
 import utez.edu.mx.unidad3.security.jwt.UDService;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Collectors;
 
 @Component
 public class JWTFilter extends OncePerRequestFilter {
@@ -48,23 +53,53 @@ public class JWTFilter extends OncePerRequestFilter {
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 System.out.println("Procesando autenticación para usuario: " + username);
 
-                UserDetails userDetails = uDService.loadUserByUsername(username);
-                System.out.println("UserDetails cargado: " + userDetails.getUsername());
-                System.out.println("Authorities: " + userDetails.getAuthorities());
+                try {
+                    // Intentar obtener roles del token primero (más eficiente)
+                    String rolesFromToken = jwtUtils.extractRoles(token);
+                    Collection<? extends GrantedAuthority> authorities = null;
 
-                if (jwtUtils.validateToken(token, userDetails)) {
-                    System.out.println("Token VÁLIDO - Estableciendo autenticación");
+                    if (rolesFromToken != null && !rolesFromToken.isEmpty()) {
+                        // Usar roles del token
+                        authorities = Arrays.stream(rolesFromToken.split(","))
+                                .map(String::trim)
+                                .filter(role -> !role.isEmpty())
+                                .map(SimpleGrantedAuthority::new)
+                                .collect(Collectors.toList());
+                        System.out.println("Roles extraídos del token: " + rolesFromToken);
+                    } else {
+                        // Fallback: cargar desde base de datos (para tokens antiguos)
+                        System.out.println("No hay roles en el token, cargando desde BD...");
+                        UserDetails userDetails = uDService.loadUserByUsername(username);
+                        authorities = userDetails.getAuthorities();
+                    }
 
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            userDetails, null, userDetails.getAuthorities()
-                    );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    // Validar token básico (solo expiración y firma)
+                    if (!jwtUtils.isTokenExpired(token)) {
+                        System.out.println("Token VÁLIDO - Estableciendo autenticación");
+                        System.out.println("Authorities: " + authorities);
 
-                    // Guardar el token en el contexto de seguridad
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                    System.out.println("Autenticación establecida exitosamente");
-                } else {
-                    System.out.println("Token INVÁLIDO - No se estableció autenticación");
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                username, null, authorities
+                        );
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                        System.out.println("Autenticación establecida exitosamente");
+                    } else {
+                        System.out.println("Token EXPIRADO - No se estableció autenticación");
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error al procesar autenticación: " + e.getMessage());
+                    // En caso de error, intentar con el método tradicional
+                    UserDetails userDetails = uDService.loadUserByUsername(username);
+                    if (jwtUtils.validateToken(token, userDetails)) {
+                        UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities()
+                        );
+                        authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authToken);
+                        System.out.println("Autenticación establecida con fallback");
+                    }
                 }
             } else if (username != null) {
                 System.out.println("Usuario ya autenticado en el contexto");

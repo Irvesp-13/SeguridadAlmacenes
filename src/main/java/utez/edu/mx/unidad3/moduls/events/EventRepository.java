@@ -48,22 +48,21 @@ public interface EventRepository extends JpaRepository<Event, Long> {
 
     // Buscar eventos en un rango de fechas
     @Query("SELECT e FROM Event e WHERE e.eventDate BETWEEN :startDate AND :endDate ORDER BY e.eventDate ASC")
-    List<Event> findEventsBetweenDates(@Param("startDate") LocalDateTime startDate,
-                                      @Param("endDate") LocalDateTime endDate);
+    List<Event> findEventsBetweenDates(@Param("startDate") LocalDateTime startDate, @Param("endDate") LocalDateTime endDate);
 
-    // Buscar eventos por creador y tipo
-    @Query("SELECT e FROM Event e WHERE e.creator.username = :username AND e.type.name = :typeName")
-    List<Event> findByCreatorUsernameAndTypeName(@Param("username") String username, @Param("typeName") String typeName);
+    // Buscar eventos a los que asiste un usuario específico
+    @Query("SELECT e FROM Event e JOIN e.attendees a WHERE a.username = :username ORDER BY e.eventDate DESC")
+    List<Event> findEventsByAttendeeUsername(@Param("username") String username);
 
-    // Buscar eventos por título (búsqueda parcial)
-    @Query("SELECT e FROM Event e WHERE LOWER(e.title) LIKE LOWER(CONCAT('%', :title, '%'))")
-    List<Event> findByTitleContainingIgnoreCase(@Param("title") String title);
+    // Verificar si un usuario ya está registrado para asistir a un evento
+    @Query("SELECT COUNT(e) > 0 FROM Event e JOIN e.attendees a WHERE e.id = :eventId AND a.username = :username")
+    boolean isUserRegisteredForEvent(@Param("eventId") Long eventId, @Param("username") String username);
 
-    // Buscar eventos por ubicación
-    @Query("SELECT e FROM Event e WHERE LOWER(e.location) LIKE LOWER(CONCAT('%', :location, '%'))")
-    List<Event> findByLocationContainingIgnoreCase(@Param("location") String location);
+    // Obtener la cantidad de asistentes de un evento
+    @Query("SELECT SIZE(e.attendees) FROM Event e WHERE e.id = :eventId")
+    int getAttendeesCount(@Param("eventId") Long eventId);
 
-    // Buscar eventos públicos próximos (todos los eventos próximos disponibles)
-    @Query("SELECT e FROM Event e WHERE e.eventDate > :currentDate AND e.status = 'PROXIMAMENTE' ORDER BY e.eventDate ASC")
-    List<Event> findPublicUpcomingEvents(@Param("currentDate") LocalDateTime currentDate);
+    // Buscar eventos con estado específico a los que asiste un usuario
+    @Query("SELECT e FROM Event e JOIN e.attendees a WHERE a.username = :username AND e.status = :status ORDER BY e.eventDate DESC")
+    List<Event> findEventsByAttendeeUsernameAndStatus(@Param("username") String username, @Param("status") EventStatus status);
 }

@@ -135,4 +135,81 @@ public class EventController {
         APIResponse response = eventService.updateEvent(id, eventRequestDto, currentUsername);
         return ResponseEntity.status(response.getStatus()).body(response);
     }
+
+    // ==================== ENDPOINTS PARA ASISTENCIA A EVENTOS ====================
+
+    @PostMapping("/{eventId}/attend")
+    @Operation(summary = "Registrar asistencia a un evento", description = "Permite al usuario autenticado registrarse para asistir a un evento")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> registerAttendance(@PathVariable Long eventId) {
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        APIResponse response = eventService.registerAttendance(eventId, username);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @DeleteMapping("/{eventId}/attend")
+    @Operation(summary = "Cancelar asistencia a un evento", description = "Permite al usuario autenticado cancelar su asistencia a un evento")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> cancelAttendance(@PathVariable Long eventId) {
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        APIResponse response = eventService.cancelAttendance(eventId, username);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @DeleteMapping("/{eventId}/cancel-attendance")
+    @Operation(summary = "Cancelar asistencia a un evento (endpoint alternativo)", description = "Endpoint alternativo para cancelar asistencia - mantiene compatibilidad con frontend")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> cancelAttendanceAlternative(@PathVariable Long eventId) {
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        APIResponse response = eventService.cancelAttendance(eventId, username);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @GetMapping("/my-attendance")
+    @Operation(summary = "Obtener eventos a los que voy a asistir", description = "Obtiene todos los eventos a los que el usuario autenticado va a asistir")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> getMyAttendanceEvents() {
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        APIResponse response = eventService.getEventsByAttendee(username);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @GetMapping("/{eventId}/attendees")
+    @Operation(summary = "Obtener asistentes de un evento", description = "Obtiene la lista de usuarios que van a asistir a un evento específico")
+    public ResponseEntity<APIResponse> getEventAttendees(@PathVariable Long eventId) {
+        APIResponse response = eventService.getEventAttendees(eventId);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @GetMapping("/{eventId}/check-attendance")
+    @Operation(summary = "Verificar si estoy registrado para el evento", description = "Verifica si el usuario autenticado está registrado para asistir al evento")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> checkMyRegistration(@PathVariable Long eventId) {
+        // Obtener el username del usuario autenticado
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        APIResponse response = eventService.checkUserRegistration(eventId, username);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
+
+    @GetMapping("/user/{username}/attendance")
+    @Operation(summary = "Obtener eventos de asistencia de un usuario", description = "Obtiene eventos a los que asiste un usuario específico - solo para admins")
+    @SecurityRequirement(name = "bearerAuth")
+    public ResponseEntity<APIResponse> getUserAttendanceEvents(@PathVariable String username) {
+        APIResponse response = eventService.getEventsByAttendee(username);
+        return ResponseEntity.status(response.getStatus()).body(response);
+    }
 }

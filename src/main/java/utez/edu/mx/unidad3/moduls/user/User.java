@@ -49,12 +49,7 @@ public class User {
     private Set<Event> createdEvents;
 
     // Relación Muchos a Muchos con Event (eventos a los que asistirá)
-    @ManyToMany
-    @JoinTable(
-        name = "user_event",
-        joinColumns = @JoinColumn(name = "user_id"),
-        inverseJoinColumns = @JoinColumn(name = "event_id")
-    )
+    @ManyToMany(mappedBy = "attendees")
     @JsonIgnore
     private Set<Event> events; // Eventos a los que asistirá este usuario
 

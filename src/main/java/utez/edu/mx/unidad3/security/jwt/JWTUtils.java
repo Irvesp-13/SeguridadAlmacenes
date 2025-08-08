@@ -4,9 +4,11 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,7 +37,7 @@ public class JWTUtils {
     }
 
     // Validar que el token no este expirado
-    private Boolean isTokenExpired(String token) {
+    public Boolean isTokenExpired(String token) {
         return extractExpiration(token).before(new Date());
     }
 
@@ -58,6 +60,23 @@ public class JWTUtils {
     // Consume la funcion de crear para solamente exportar el token
     public String generateToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
+
+        // Agregar los roles/authorities al token
+        Collection<? extends GrantedAuthority> authorities = userDetails.getAuthorities();
+        if (authorities != null && !authorities.isEmpty()) {
+            // Extraer los nombres de los roles
+            String roles = authorities.stream()
+                    .map(GrantedAuthority::getAuthority)
+                    .reduce((a, b) -> a + "," + b)
+                    .orElse("");
+            claims.put("roles", roles);
+        }
+
         return createToken(claims, userDetails.getUsername());
+    }
+
+    // Método para extraer roles del token
+    public String extractRoles(String token) {
+        return extractClaims(token, claims -> claims.get("roles", String.class));
     }
 }
